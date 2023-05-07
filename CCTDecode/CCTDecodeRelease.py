@@ -26,7 +26,7 @@ from PIL import ImageDraw
 from DrawCCT import *
 from Support import *
 
-path1=os.path.abspath('.') #当前文件夹所处的绝对路径
+path1=os.path.abspath('.') #The absolute path of the current folder.
 
 def getImg(img_path):
     [dirname,filename]=os.path.split(img_path)        
@@ -41,12 +41,12 @@ def getImg(img_path):
     
 def CCT_extract(img,N,R,color='white'):
          
-    #存放解码结果的list
+    #The list stores the decoding results
     CodeTable=[]
     '''
-    image.shape[0], 图片垂直尺寸
-    image.shape[1], 图片水平尺寸
-    image.shape[2], 图片通道数
+    image.shape[0], The vertical dimension (height) of an image
+    image.shape[1], The horizontal dimension (width) of an image
+    image.shape[2], The number of channels in an image
     '''
     img_shape=img.shape
     img_height=img_shape[0]
@@ -55,69 +55,71 @@ def CCT_extract(img,N,R,color='white'):
 #    print('img_width=',img_width)
 #    print('img_height=',img_height)
 
-    #将输入图像转换为灰度图
+    #Convert the input image to grayscale
     img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-    #使用Otsu对图像进行自适应二值化
+    #Perform adaptive thresholding on the image using Otsu's method
     retval,img_bina=cv2.threshold(img_gray,0,1,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
-    #使用findcontours函数对二值化后的图像进行轮廓提取,第三个参数为轮廓点的存储方式，这里选返回所有轮廓点，方便后面做筛选
+    #Use the findContours function to extract contours from the binary image.
+    #The third parameter specifies the storage method for the contour points.
+    #Here, we select to return all contour points for ease of filtering in later steps
     contours, hierarchy = cv2.findContours(img_bina,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)  
     #cv2.drawContours(img,contours,-1,(0,0,255),1) 
-    #遍历提取出来的轮廓，筛选其中的椭圆轮廓    
+    #Traverse the extracted contours and filter out the elliptical contours   
     for contour in contours:
         area=cv2.contourArea(contour,False)
         length=cv2.arcLength(contour,True)
-        #计算轮廓的圆度
+        #Calculate the contour circle
         R0=2*math.sqrt(math.pi*area)/(length+1)
         if R0<R:                
             continue
         if len(contour)<20:                
             continue
-        #在原图上绘制该条轮廓
+        #Draw the contour on the original image
 #            cv2.drawContours(img,contour,-1,(0,0,255),2)
 #            print('det_r=',det_r)
 #            print('len(contour)=',len(contour))
-        #将轮廓点集转换为numpy数组
+        #Convert the contour points to a numpy array
         e_points=np.array(contour) 
-        #得到拟合的椭圆参数：中心点坐标，尺寸，旋转角
+        #Obtain the fitting ellipse parameters: center point coordinates, size, and rotation angle
         box1=cv2.fitEllipse(e_points)        
         #print('box1:',box1)       
         box2=tuple([box1[0],tuple([box1[1][0]*2,box1[1][1]*2]),box1[2]])
         box3=tuple([box1[0],tuple([box1[1][0]*3,box1[1][1]*3]),box1[2]])          
-        #求得最外层椭圆的最小外接矩形的四个顶点，顺时针方向
+        #Calculate the four vertices of the minimum bounding rectangle of the outermost ellipse, in clockwise order
         minRect = cv2.boxPoints(box3)     
-        #计算椭圆的长轴
+        #Calculate the major axis of the ellipse
         a=max(box3[1][0],box3[1][1])
         s=a    
-        #在原图像中裁剪CCT所在的区域
+        #Crop the region of interest (ROI) containing the CCT from the original image
         cct_roi=None
         row_min=round(box1[0][1]-s/2)
         row_max=round(box1[0][1]+s/2)
         col_min=round(box1[0][0]-s/2)
         col_max=round(box1[0][0]+s/2)
-#            print('判断该ROI是否超出边界......')
+#            print('Determine if the ROI is out of bounds......')
 #            print([row_min,row_max,col_min,col_max])
-        #判断cct_roi是否超出原图像边界
+        #Determine if the cct_roi is out of bounds of the original image
         if row_min>=0 and row_max<=img_height and col_min>=0 and col_max<=img_width:
-            #从原图像中将cct_roi截取出来            
+            #Extract the cct_roi from the original image            
             cct_roi=img[row_min:row_max,col_min:col_max]                   
-            #cct_roi相对于原始影像的偏移量
+            #The offset of cct_roi with respect to the original image
             dx=box1[0][0]-s/2
             dy=box1[0][1]-s/2            
-            #对CCT椭圆区域进行仿射变换将其变为正圆
+            #Perform an affine transformation on the elliptical region of the CCT to transform it into a perfect circle
             src=np.float32([[minRect[0][0]-dx,minRect[0][1]-dy],[minRect[1][0]-dx,minRect[1][1]-dy],
                             [minRect[2][0]-dx,minRect[2][1]-dy],[minRect[3][0]-dx,minRect[3][1]-dy],
                             [box1[0][0]-dx,box1[0][1]-dy]])
             dst=np.float32([[box1[0][0]-a/2-dx,box1[0][1]-a/2-dy],[box1[0][0]+a/2-dx,box1[0][1]-a/2-dy],
                             [box1[0][0]+a/2-dx,box1[0][1]+a/2-dy],[box1[0][0]-a/2-dx,box1[0][1]+a/2-dy],
                             [box1[0][0]-dx,box1[0][1]-dy]])        
-            #得到仿射变换矩阵
+            #Obtain the affine transformation matrix
             #M=cv2.getAffineTransform(src,dst)
             M=my_getAffineTransform(src,dst)
             if isinstance(M,int):
                 continue
-            #计算仿射变换后的中心点坐标
+            #Calculate the coordinates of the center point after affine transformation
             X0,Y0=PointAffineTransform(M,[box1[0][0]-dx,box1[0][1]-dy])
             #print('X0=',X0,'  ','Y0=',Y0)
             CCT_img=None
