@@ -5,12 +5,12 @@ CCTDecode
 
 Requirements: 
 ---------------- 
-
-python 3.7
-progress
-numpy
-opencv-python
-matplotlib
+CCTDecodeRelease:<br>
+python 3.7<br>
+progress<br>
+numpy<br>
+opencv-python<br>
+matplotlib<br>
 
 <1> python 3.7 (I don't know whether other python version would work correctly, you can have a try.) <br>
 <2> opencv-python <br>
