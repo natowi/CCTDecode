@@ -6,6 +6,12 @@ CCTDecode
 Requirements: 
 ---------------- 
 
+python 3.7
+progress
+numpy
+opencv-python
+matplotlib
+
 <1> python 3.7 (I don't know whether other python version would work correctly, you can have a try.) <br>
 <2> opencv-python <br>
 <3> pillow <br>
@@ -13,7 +19,7 @@ Requirements:
 <5> matplotlib <br>
 <6> progress <br>
 <7> ... (maybe others, you can follow the error infomation to 'pip install xxx' them.) <br>
- 
+
 The main function is listed as following:
 -----------------------------------------
 
