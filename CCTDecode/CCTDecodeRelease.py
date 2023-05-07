@@ -11,6 +11,13 @@ Created on Thu Jul 11 11:40:29 2019
 
 @author: 34086
 """
+#requirements 
+#python 3.7
+#progress
+#numpy
+#opencv-python
+#matplotlib
+
 import sys
 from progress.bar import ShadyBar
 import argparse
